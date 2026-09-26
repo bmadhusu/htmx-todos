@@ -27,7 +27,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 </head>
 <body style="font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; margin: 3rem auto; max-width: 34rem; padding: 0 1rem;">
   <h1>htmx todos</h1>
-  <p>The delivery path works. Features start arriving in FD-002.</p>
+  <p>The delivery path works, end to end. Features start arriving in FD-002.</p>
   <p style="color: #6b6b6b;">Running version <code>${version}</code>.</p>
 </body>
 </html>`),
