@@ -83,6 +83,8 @@ src/
 ### Data model
 
 ```ts
+type Filter = 'all' | 'active' | 'done';   // anything else falls back to 'all'
+
 type Todo = { id: string; title: string; done: boolean; createdAt: string };
 
 type Session = {
@@ -114,6 +116,15 @@ interface TodoStore {
   sweep(now: Date): void;                    // drops sessions idle > 30 days
 }
 ```
+
+`sweep` is called on an hourly `setInterval` (unref'd, so it never holds the
+process open) and once after the snapshot is loaded at boot. It is never called
+from a request path.
+
+`restore` returns the todo only when `id` matches the session's single `trash`
+entry and the TTL has not passed. A mismatched id and an expired entry are the
+same case and both raise `ExpiredUndo`, which the route renders as 410 — there is
+no separate 404 for undo.
 
 `MemoryStore` is a `Map<string, Session>`. `SnapshotStore` wraps any store and
 writes `$SNAPSHOT_PATH` on a debounced timer and on `SIGTERM`. Tests use a bare
@@ -164,6 +175,12 @@ function respond(req, reply, fragment: string) {
   return reply.redirect(303, backUrl(req));   // no-JS: full page reload
 }
 ```
+
+`backUrl(req)` rebuilds `/?filter=<f>&q=<q>` from the request's own query string
+and body, **never from the `Referer` header** — Referer is absent or stripped
+often enough that the no-JS path would silently lose the user's filter. Every
+no-JS form therefore carries hidden `filter` and `q` inputs, rendered by the same
+macros. Values outside the `Filter` union fall back to `all`.
 
 This function *is* the progressive enhancement story. htmx receives a fragment;
 a JS-disabled browser receives a 303 back to `/` with `filter` and `q`
