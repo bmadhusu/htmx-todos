@@ -1,6 +1,6 @@
 # FD-001: Walking skeleton live on Railway
 
-**Status:** In Progress
+**Status:** Pending Verification
 **Priority:** High
 **Effort:** Medium (1-4 hours)
 **Impact:** Proves the whole delivery path — repo → CI → build → deploy → live URL → rollback — while the app is still nearly empty and hiccups cost nothing to fix.
@@ -72,6 +72,35 @@ infrastructure, not a laptop.
 5. `curl -s https://<domain>/healthz` → status ok and the live commit SHA
 6. **Demo walkthrough:** change one line of visible text, push, confirm live, roll back from the
    Railway dashboard, confirm the previous text returns. Record the rollback steps in this file.
+
+## Delivery Path (rehearsed 2026-09-26)
+
+**Repo:** https://github.com/bmadhusu/htmx-todos (public)
+**Live:** https://htmx-todos-production.up.railway.app
+**CI:** GitHub Actions — typecheck + `node:test`, ~12s
+
+Railway's domain form asks for a **target port**, which is not part of the public URL: the
+public domain is served over HTTPS on 443 and Railway injects `PORT` (8080 here) into the
+container, which `src/server.ts` reads. `https://<domain>:8080` does not resolve; that is
+expected, not a misconfiguration.
+
+Deploy latency measured from `git push` to the new commit answering `/healthz`: **~56 seconds**.
+
+### Rollback, as rehearsed
+
+1. Railway dashboard → the service → **Deployments** tab
+2. Select the deployment to return to (identify it by commit SHA, not by position)
+3. **⋮ menu → Rollback** (labelled "Redeploy" on some plans; equivalent)
+4. Verify with `curl -s https://<domain>/healthz` — the `version` field must report the SHA you
+   rolled back *to*
+
+Verified end to end: deployed `4b046e8` (visible copy changed, `/healthz` reported `4b046e8d`),
+rolled back, confirmed `/healthz` reported `2fb3a0e9` and the copy reverted.
+
+**Caveat worth knowing:** a rollback leaves production behind `main`. After this rehearsal the
+live site ran `2fb3a0e` while `main` was at `4b046e8`. The next push to `main` resolves it, but
+until then the version endpoint is the only thing that tells you the two disagree — which is the
+whole argument for having it.
 
 ## Plan Coverage
 
