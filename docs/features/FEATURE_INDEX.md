@@ -8,7 +8,15 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 
 | FD | Title | Status | Effort | Priority |
 |----|-------|--------|--------|----------|
-| - | - | - | - | No active features yet |
+| FD-001 | Walking skeleton live on Railway | In Progress | Medium | High |
+| FD-002 | Every visitor gets their own seeded list | Open | High | High |
+| FD-003 | Search and filter as you type | Open | Medium | Medium |
+| FD-004 | Add a todo, with and without JavaScript | Open | Medium | High |
+| FD-005 | Tick todos off and rename them in place | Open | Medium | High |
+| FD-006 | Delete with a 30-second undo | Open | Medium | Medium |
+| FD-007 | Todos survive restarts and redeploys | Open | Medium | High |
+| FD-008 | Automated proof it works without JavaScript | Open | Medium | High |
+| FD-009 | The README and demo that make it a portfolio piece | Open | Medium | High |
 
 ## Completed
 

@@ -7,26 +7,97 @@ signing up, read the source, and find it clean.
 
 ## Tech Stack
 
-Node 24+ with TypeScript (native type stripping — no build step), Fastify 5,
-`@fastify/view` + Nunjucks, htmx 2 (vendored, not CDN), `node:test`, Playwright,
-deployed on Railway.
-
-**No database.** State lives in an in-memory `MemoryStore` behind a `TodoStore`
-interface, wrapped by a `SnapshotStore` that debounces writes to a JSON file on a
-Railway volume. `TodoStore` in `src/store/types.ts` is the seam where SQLite or
-Postgres would drop in.
+| Layer | Choice | Notes |
+|-------|--------|-------|
+| Runtime | Node 24+ | Native TypeScript type stripping — no build step, no `dist/` |
+| Language | TypeScript 5.7, strict | `erasableSyntaxOnly`: no enums, no parameter properties, no namespaces; relative imports carry `.ts` |
+| Framework | Fastify 5 | `method: ['PATCH', 'POST']` arrays are what make progressive enhancement free |
+| Views | `@fastify/view` + Nunjucks | Autoescaping on and explicitly configured; one macro per fragment |
+| Client | htmx 2, vendored at `public/htmx.min.js` | Not a CDN — the demo works offline and cannot break from a moved URL |
+| Data | **No database** | `MemoryStore` (a `Map`) behind the `TodoStore` interface, wrapped by `SnapshotStore` writing debounced JSON |
+| Tests | `node:test` | `npm test` (unit + route via `app.inject()`), `npm run typecheck` |
+| E2E | Playwright | `npm run test:e2e` — includes the no-JavaScript proof |
+| CI | GitHub Actions | typecheck → unit → Playwright on every push |
+| Hosting | Railway | Deploys on push to `main`; volume at `/data`, `SNAPSHOT_PATH=/data/sessions.json`; single replica |
 
 ## Best Practices
 
-- **TDD**: write the failing test, watch it fail, implement minimally, watch it pass, commit.
-- **Progressive enhancement is not optional**: every mutating route must answer `POST`
-  as well as its htmx verb, and every mutation must return the out-of-band count.
-  `test/contract.test.ts` enforces both across every endpoint.
-- **One macro per fragment**: a todo row is defined once in `views/partials/macros.njk`
-  and reused by every render path, so it cannot drift out of sync with itself.
-- **Route handlers depend only on `TodoStore`** — never on `MemoryStore` or the snapshot.
-- **Session scoping is the authorization model**: every store method takes a session id
-  and resolves todos within it.
+### TDD loop
+
+Write the failing test → run it and watch it fail → minimal implementation → run it and watch it
+pass → commit. The plan's tasks are already shaped this way; follow their steps in order.
+
+### Quality gates
+
+Before any commit:
+
+```bash
+npm test && npm run typecheck
+```
+
+Before closing an FD, also `npm run test:e2e`.
+
+### Commits
+
+Small and frequent. `FD-XXX: Brief description` for FD-level commits; the plan's intra-task
+commits use `feat:` / `test:` prefixes.
+
+### DRY, YAGNI
+
+Build what the spec asks for and nothing speculative. Drag-to-reorder was considered and cut;
+don't reintroduce it without a decision.
+
+### File structure
+
+The boundaries the plan locked in — respect them:
+
+| Path | Responsibility |
+|------|----------------|
+| `src/app.ts` | Builds the Fastify instance, registers plugins |
+| `src/server.ts` | Entrypoint: config, snapshot load, sweeper, binds `0.0.0.0:$PORT` |
+| `src/session.ts` | Signed `sid` cookie, seeds examples on a first visit |
+| `src/store/` | `types.ts` (interface), `memory.ts` (implementation), `snapshot.ts` (persistence decorator) |
+| `src/routes/` | `pages.ts` (full page), `todos.ts` (every mutation) |
+| `src/lib/` | `respond.ts`, `params.ts`, `render.ts`, `error-handler.ts`, `config.ts` |
+| `views/partials/macros.njk` | Single source of every fragment's markup |
+| `test/helpers.ts` | Shared harness — a plain module, never a `.test.ts` file |
+
+Route handlers depend only on `TodoStore` — never on `MemoryStore` or the snapshot.
+
+### Testing conventions
+
+- Unit and route tests live in `test/*.test.ts`; `node --test` runs each file in its own process.
+- Shared helpers go in `test/helpers.ts`. A helper inside a `.test.ts` file makes every importer
+  re-run that file's tests.
+- Time-dependent behaviour uses an injected clock (`new MemoryStore({ now })`), never real timers.
+- Browser specs live in `e2e/`.
+
+### Non-negotiable invariants
+
+Enforced by `test/contract.test.ts` across every endpoint:
+
+1. **Every mutating route answers `POST`** as well as its htmx verb — a plain HTML form can only
+   issue GET or POST.
+2. **Every mutation returns the out-of-band count**, so the badge cannot drift from the list.
+3. **Every mutation without an `HX-Request` header returns 303** back to `/` with `filter` and `q`
+   preserved. The exception is validation failure, which returns 422 to htmx and 303 with
+   `error=title` to a form.
+
+Other constraints:
+
+- Session scoping is the authorization model: every store method takes a session id and resolves
+  todos within it, so a guessed id returns 404 rather than someone else's data.
+- Titles are trimmed, then required to be 1–200 characters.
+- `htmx.config.responseHandling` in `views/layout.njk` must keep 422/410/404 swappable — htmx
+  ignores non-2xx responses by default, which would turn every designed error into a dead click.
+- Bind `0.0.0.0` and read `process.env.PORT`. Binding localhost is the classic Railway 502.
+- `COOKIE_SECRET` is required in production and the process refuses to boot without it.
+
+### Deployment
+
+Push to `main` → GitHub Actions runs the gates → Railway builds and deploys → healthcheck at
+`/healthz`. Rollback: redeploy the previous deployment from the Railway dashboard (rehearsed and
+documented in FD-001).
 
 ---
 
