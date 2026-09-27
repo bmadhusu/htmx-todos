@@ -1,0 +1,40 @@
+{% extends "layout.njk" %}
+{% from "partials/macros.njk" import countBadge %}
+{% block content %}
+<h1>Todos</h1>
+
+<form id="new-todo" action="/todos" method="post"
+      hx-post="/todos" hx-target="#todo-list" hx-swap="beforeend"
+      hx-on::after-request="if (event.detail.successful) this.reset()">
+  <input name="title" placeholder="What needs doing?" maxlength="200" required autocomplete="off" aria-label="New todo">
+  <input type="hidden" name="filter" value="{{ filter }}">
+  <input type="hidden" name="q" value="{{ q }}">
+  <button type="submit">Add</button>
+</form>
+
+<div id="form-error" role="alert">{% if error %}{{ error }}{% endif %}</div>
+
+<form id="search" action="/" method="get" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search" aria-label="Search todos"
+         hx-get="/todos" hx-trigger="keyup changed delay:300ms, search"
+         hx-target="#todo-list" hx-swap="outerHTML"
+         hx-include="#filter-input" hx-indicator="#spinner">
+  <input type="hidden" id="filter-input" name="filter" value="{{ filter }}">
+  <span id="spinner" class="htmx-indicator" aria-hidden="true">…</span>
+  <noscript><button type="submit">Search</button></noscript>
+</form>
+
+<nav id="filters">
+  {% for f in ["all", "active", "done"] %}
+  <a href="/?filter={{ f }}&q={{ q | urlencode }}"
+     hx-get="/todos?filter={{ f }}&q={{ q | urlencode }}"
+     hx-target="#todo-list" hx-swap="outerHTML"
+     class="{{ 'is-current' if filter == f }}">{{ f }}</a>
+  {% endfor %}
+  {{ countBadge(remaining, false) }}
+</nav>
+
+{% include "partials/list.njk" %}
+
+<div id="toast"></div>
+{% endblock %}

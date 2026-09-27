@@ -1,0 +1,61 @@
+{% macro row(todo, filter, q) %}
+<li id="todo-{{ todo.id }}" class="todo{{ ' is-done' if todo.done }}">
+  <form class="inline" action="/todos/{{ todo.id }}/done" method="post"
+        hx-patch="/todos/{{ todo.id }}/done"
+        hx-target="#todo-{{ todo.id }}" hx-swap="outerHTML">
+    <input type="hidden" name="done" value="{{ 'false' if todo.done else 'true' }}">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <button type="submit" class="toggle" aria-pressed="{{ 'true' if todo.done else 'false' }}"
+            aria-label="Mark as {{ 'not done' if todo.done else 'done' }}">{{ '✓' if todo.done else '○' }}</button>
+  </form>
+  <span class="title">{{ todo.title }}</span>
+  <a class="edit" href="/?filter={{ filter }}&q={{ q | urlencode }}&edit={{ todo.id }}"
+     hx-get="/todos/{{ todo.id }}/edit?filter={{ filter }}&q={{ q | urlencode }}"
+     hx-target="#todo-{{ todo.id }}" hx-swap="outerHTML">Edit</a>
+  <form class="inline" action="/todos/{{ todo.id }}" method="post"
+        hx-delete="/todos/{{ todo.id }}"
+        hx-target="#todo-{{ todo.id }}" hx-swap="outerHTML">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <button type="submit" class="delete" aria-label="Delete">×</button>
+  </form>
+</li>
+{% endmacro %}
+
+{% macro editRow(todo, filter, q) %}
+<li id="todo-{{ todo.id }}" class="todo is-editing">
+  <form class="inline" action="/todos/{{ todo.id }}/title" method="post"
+        hx-patch="/todos/{{ todo.id }}/title"
+        hx-target="#todo-{{ todo.id }}" hx-swap="outerHTML">
+    <input name="title" value="{{ todo.title }}" maxlength="200" required autofocus aria-label="Edit title">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <button type="submit">Save</button>
+  </form>
+  <a class="cancel" href="/?filter={{ filter }}&q={{ q | urlencode }}"
+     hx-get="/todos/{{ todo.id }}?filter={{ filter }}&q={{ q | urlencode }}"
+     hx-target="#todo-{{ todo.id }}" hx-swap="outerHTML">Cancel</a>
+</li>
+{% endmacro %}
+
+{% macro countBadge(remaining, oob) %}
+<span id="count"{% if oob %} hx-swap-oob="true"{% endif %}>{{ remaining }} left</span>
+{% endmacro %}
+
+{% macro toastBox(todo, filter, q, message) %}
+<div id="toast" hx-swap-oob="true">
+  {% if todo %}
+  <form class="inline" action="/todos/{{ todo.id }}/restore" method="post"
+        hx-post="/todos/{{ todo.id }}/restore"
+        hx-target="#todo-list" hx-swap="outerHTML">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <span>Deleted "{{ todo.title }}"</span>
+    <button type="submit">Undo</button>
+  </form>
+  {% elif message %}
+  <span class="toast-message">{{ message }}</span>
+  {% endif %}
+</div>
+{% endmacro %}

@@ -1,9 +1,15 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyServerOptions } from 'fastify';
 import cookie from '@fastify/cookie';
 import formbody from '@fastify/formbody';
+import fastifyStatic from '@fastify/static';
+import view from '@fastify/view';
+import nunjucks from 'nunjucks';
 import { sessionPlugin } from './session.ts';
+import { registerErrorHandler } from './lib/error-handler.ts';
+import { pagesRoutes } from './routes/pages.ts';
 import type { TodoStore } from './store/types.ts';
 
 /** Written by CI next to the uploaded source, immediately before `railway up`. */
@@ -66,27 +72,23 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(cookie, { secret: deps.cookieSecret });
   await app.register(formbody);
+  // Autoescaping is configured explicitly rather than relied on as a default:
+  // todo titles are user input rendered straight back into HTML.
+  await app.register(view, {
+    engine: { nunjucks },
+    root: fileURLToPath(new URL('../views', import.meta.url)),
+    options: { autoescape: true },
+  });
+  await app.register(fastifyStatic, {
+    root: fileURLToPath(new URL('../public', import.meta.url)),
+    prefix: '/static/',
+  });
   await app.register(sessionPlugin, { store: deps.store });
 
-  app.get('/healthz', async () => ({ status: 'ok', version }));
+  registerErrorHandler(app);
+  pagesRoutes(app, deps.store);
 
-  // Placeholder shell, replaced by the real Nunjucks page in FD-002. It exists
-  // so the tracer bullet has something visible at the root URL.
-  app.get('/', async (_request, reply) =>
-    reply.type('text/html; charset=utf-8').send(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>htmx todos</title>
-</head>
-<body style="font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; margin: 3rem auto; max-width: 34rem; padding: 0 1rem;">
-  <h1>htmx todos</h1>
-  <p>The delivery path works, end to end. Features start arriving in FD-002.</p>
-  <p style="color: #6b6b6b;">Running version <code>${version}</code>.</p>
-</body>
-</html>`),
-  );
+  app.get('/healthz', async () => ({ status: 'ok', version }));
 
   return app;
 }

@@ -1,0 +1,7 @@
+{% from "partials/macros.njk" import row, editRow %}
+<ul id="todo-list">
+  {% for todo in todos %}
+    {% if editId and todo.id == editId %}{{ editRow(todo, filter, q) }}{% else %}{{ row(todo, filter, q) }}{% endif %}
+  {% endfor %}
+  {% if todos.length == 0 %}<li class="empty">Nothing here yet.</li>{% endif %}
+</ul>
