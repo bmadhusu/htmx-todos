@@ -38,6 +38,6 @@ for attempt in $(seq 1 "${ATTEMPTS}"); do
   fi
 done
 
-echo "❌ ${BASE_URL} never reported ${EXPECTED:0:8} after $((ATTEMPTS * INTERVAL))s" >&2
+echo "❌ ${BASE_URL} never reported ${EXPECTED:0:8} after ${ATTEMPTS} attempts" >&2
 echo "   last response: ${body:-<none>}" >&2
 exit 1
