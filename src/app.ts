@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import Fastify from 'fastify';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyServerOptions } from 'fastify';
+import cookie from '@fastify/cookie';
+import formbody from '@fastify/formbody';
+import { sessionPlugin } from './session.ts';
+import type { TodoStore } from './store/types.ts';
 
 /** Written by CI next to the uploaded source, immediately before `railway up`. */
 export const COMMIT_FILE = new URL('../.commit', import.meta.url);
@@ -39,16 +43,30 @@ export function resolveVersion(
 }
 
 export type AppDeps = {
+  store: TodoStore;
+  /** Signs the session cookie. Required in production; see lib/config.ts. */
+  cookieSecret: string;
   /**
    * The commit this process is running. Surfaced by /healthz so a deploy can be
    * identified, not merely detected. Falls back to 'dev' outside Railway.
    */
   version?: string;
+  /** Tests pass false to keep the output readable. */
+  logger?: FastifyServerOptions['logger'];
 };
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
+  // The logger is on by default: the error handler logs unexpected failures on
+  // its 500 path, and with `logger: false` those calls succeed silently, which
+  // would discard every production error.
+  const app = Fastify({
+    logger: deps.logger ?? { level: process.env.LOG_LEVEL ?? 'info' },
+  });
   const version = deps.version ?? 'dev';
+
+  await app.register(cookie, { secret: deps.cookieSecret });
+  await app.register(formbody);
+  await app.register(sessionPlugin, { store: deps.store });
 
   app.get('/healthz', async () => ({ status: 'ok', version }));
 

@@ -5,9 +5,19 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { buildApp, readVersion, resolveVersion } from '../src/app.ts';
+import { MemoryStore } from '../src/store/memory.ts';
+
+function deps(extra: Record<string, unknown> = {}) {
+  return {
+    store: new MemoryStore(),
+    cookieSecret: 'test-secret-value-at-least-32-chars',
+    logger: false as const,
+    ...extra,
+  };
+}
 
 test('GET /healthz reports ok and the running version', async (t) => {
-  const app = await buildApp({ version: 'abc123' });
+  const app = await buildApp(deps({ version: 'abc123' }));
   t.after(() => app.close());
 
   const res = await app.inject({ method: 'GET', url: '/healthz' });
@@ -17,7 +27,7 @@ test('GET /healthz reports ok and the running version', async (t) => {
 });
 
 test('the version falls back to dev when no commit is available', async (t) => {
-  const app = await buildApp({});
+  const app = await buildApp(deps());
   t.after(() => app.close());
 
   const res = await app.inject({ method: 'GET', url: '/healthz' });
@@ -26,7 +36,7 @@ test('the version falls back to dev when no commit is available', async (t) => {
 });
 
 test('GET / serves a shell page that names the app', async (t) => {
-  const app = await buildApp({});
+  const app = await buildApp(deps());
   t.after(() => app.close());
 
   const res = await app.inject({ method: 'GET', url: '/' });
