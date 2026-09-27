@@ -95,9 +95,27 @@ Other constraints:
 
 ### Deployment
 
-Push to `main` → GitHub Actions runs the gates → Railway builds and deploys → healthcheck at
-`/healthz`. Rollback: redeploy the previous deployment from the Railway dashboard (rehearsed and
-documented in FD-001).
+Railway's GitHub auto-deploy is **off**. GitHub Actions is the only path to production, and the
+jobs are strictly sequential:
+
+```
+push to main → test (typecheck + node:test) → deploy (railway up) → verify-deploy (poll /healthz)
+```
+
+`deploy` declares `needs: test`, so a commit with failing tests never reaches the live URL.
+`verify-deploy` polls `/healthz` via `scripts/wait-for-deploy.sh` until it reports the pushed
+commit, so a green pipeline means the live service is actually answering with that commit — not
+merely that Railway accepted an upload.
+
+Pushes to `main` are queued rather than run concurrently (`concurrency: ci-${{ github.ref }}`,
+`cancel-in-progress: false`), so two deploys cannot overlap.
+
+Requires a `RAILWAY_TOKEN` repository secret (a Railway **project** token, scoped to the production
+environment) and optionally a `RAILWAY_SERVICE` repository variable when the service is not named
+`htmx-todos`.
+
+Rollback: redeploy the previous deployment from the Railway dashboard (rehearsed and documented in
+FD-001). CI-driven deploys still appear there, so the rollback path is unchanged.
 
 ---
 

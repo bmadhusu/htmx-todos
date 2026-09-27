@@ -5,9 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+# A deploy must not race another deploy: queue pushes to main rather than
+# running them concurrently, and never cancel one midway.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,3 +24,33 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  # Railway's own GitHub auto-deploy is disabled, so this job is the only path
+  # to production. `needs: test` is the gate: a failing commit stops here.
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://htmx-todos-production.up.railway.app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service "${{ vars.RAILWAY_SERVICE || 'htmx-todos' }}" --detach
+
+  # A deploy is not successful because Railway accepted an upload. It is
+  # successful when the live service answers with the commit we pushed.
+  verify-deploy:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for the live service to report this commit
+        run: ./scripts/wait-for-deploy.sh https://htmx-todos-production.up.railway.app "${{ github.sha }}" 30 10

@@ -41,14 +41,18 @@ Two changes, plus a documentation correction.
 
 ### 1. Make the deploy wait for CI
 
-**Preferred:** Railway service **Settings → Deploy → Wait for CI** (also labelled "Check Suites" on
-some plans). When enabled, Railway waits for GitHub's check suite to pass before building. Zero code,
-and it keeps Railway's own build logs and rollback UI intact — which FD-001 rehearsed against.
+**Chosen: CI drives the deploy.** Railway's GitHub auto-deploy is turned off, and the workflow runs
+`test` → `deploy` → `verify-deploy`, each depending on the last.
 
-**Fallback,** if that setting is unavailable on the current plan: disable automatic deploys in the
-Railway GitHub integration and drive the deploy from CI instead. Add a `deploy` job with
-`needs: test`, authenticating with a `RAILWAY_TOKEN` repository secret. Verify which path applies
-before writing the workflow — do not implement both.
+**Why not Railway's "Wait for CI" setting,** which looked preferable at design time: it holds the
+deploy until the commit's GitHub check suite concludes, while `verify-deploy` waits for the deploy
+to appear. Put them together and the check suite contains a job waiting on a deploy that is waiting
+on the check suite. It deadlocks, times out, and nothing ships. That is structural rather than a
+misconfiguration, so the two features are mutually exclusive unless verification is moved into a
+separate workflow — which trades the deadlock for a race against Railway's own trigger.
+
+The CI-driven path keeps both halves with no circularity. Deployments still appear in Railway's
+dashboard, so FD-001's rehearsed rollback is unaffected.
 
 ### 2. Verify the deploy, do not assume it
 
@@ -86,10 +90,11 @@ answering with the new commit before it reports success.
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `.github/workflows/ci.yml` | MODIFY | Add the `verify-deploy` job (`needs: test`, `main` pushes only); add the `deploy` job only if the fallback path applies |
+| `.github/workflows/ci.yml` | MODIFY | `deploy` job (`needs: test`, `main` pushes only) and `verify-deploy` job (`needs: deploy`); queue concurrency so deploys cannot overlap |
+| `scripts/wait-for-deploy.sh` | CREATE | Polls `/healthz` until it reports the expected commit; exits non-zero on timeout |
 | `AGENTS.md` | MODIFY | Rewrite `### Deployment` to describe the real pipeline and its gate |
 | Railway dashboard | MODIFY | Enable **Wait for CI**, or disable auto-deploy if using the fallback |
-| `railway.json` | MODIFY | Only if the fallback path is used — auto-deploy settings are not expressible here, so expect no change |
+| `AGENTS.md` | MODIFY | `### Deployment` rewritten to describe the real pipeline, its gate, and the required secret |
 
 ## Implementation Steps
 
