@@ -16,12 +16,12 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 | FD-007 | Todos survive restarts and redeploys | Open | Medium | High |
 | FD-008 | Automated proof it works without JavaScript | Open | Medium | High |
 | FD-009 | The README and demo that make it a portfolio piece | Open | Medium | High |
-| FD-010 | CI gates the deploy | Pending Verification | Medium | High |
 
 ## Completed
 
 | FD | Title | Completed | Notes |
 |----|-------|-----------|-------|
+| FD-010 | CI gates the deploy | 2026-09-26 | Proven both ways: a failing commit was blocked with production untouched; the revert deployed and verified |
 | FD-001 | Walking skeleton live on Railway | 2026-09-26 | Live at htmx-todos-production.up.railway.app; CI green; rollback rehearsed both directions |
 
 ## Deferred / Closed

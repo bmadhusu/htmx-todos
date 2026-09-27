@@ -1,6 +1,7 @@
 # FD-010: CI gates the deploy
 
-**Status:** Pending Verification
+**Status:** Complete
+**Completed:** 2026-09-26
 **Priority:** High
 **Effort:** Medium (1-4 hours)
 **Impact:** A commit with failing tests can no longer reach the live URL, and a deploy is not called successful until the running commit has been confirmed.
@@ -129,7 +130,7 @@ answering with the new commit before it reports success.
 6. `grep -A 4 '^### Deployment' AGENTS.md` — the description matches the pipeline as built
 7. **Demo walkthrough:** the click path in `## Demo`, shown from the Actions tab
 
-## Results (2026-09-27)
+## Results (2026-09-26)
 
 Both directions were exercised against the live service.
 
