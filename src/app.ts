@@ -1,6 +1,15 @@
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
+/**
+ * Validated at the boundary rather than escaped at render: the version is
+ * interpolated into HTML, and a commit SHA has an exact known shape, so anything
+ * that is not one is not a version worth reporting.
+ */
+export function readVersion(raw: string | undefined): string {
+  return raw !== undefined && /^[0-9a-f]{7,40}$/i.test(raw) ? raw : 'dev';
+}
+
 export type AppDeps = {
   /**
    * The commit this process is running. Surfaced by /healthz so a deploy can be
