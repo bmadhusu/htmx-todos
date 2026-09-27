@@ -8,7 +8,7 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 
 | FD | Title | Status | Effort | Priority |
 |----|-------|--------|--------|----------|
-| FD-002 | Every visitor gets their own seeded list | Open | High | High |
+| FD-002 | Every visitor gets their own seeded list | In Progress | High | High |
 | FD-003 | Search and filter as you type | Open | Medium | Medium |
 | FD-004 | Add a todo, with and without JavaScript | Open | Medium | High |
 | FD-005 | Tick todos off and rename them in place | Open | Medium | High |

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "node --watch src/server.ts",
     "start": "node src/server.ts",
@@ -12,10 +14,17 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "fastify": "^5.2.0"
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/formbody": "^8.0.2",
+    "@fastify/static": "^8.3.0",
+    "@fastify/view": "^10.0.2",
+    "fastify": "^5.2.0",
+    "fastify-plugin": "^5.1.0",
+    "nunjucks": "^3.2.4"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/nunjucks": "^3.2.6",
     "typescript": "^5.7.0"
   }
 }
