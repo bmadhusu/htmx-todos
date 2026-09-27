@@ -16,6 +16,7 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 | FD-007 | Todos survive restarts and redeploys | Open | Medium | High |
 | FD-008 | Automated proof it works without JavaScript | Open | Medium | High |
 | FD-009 | The README and demo that make it a portfolio piece | Open | Medium | High |
+| FD-011 | Decide the deploy gate's remaining failure modes | Open | Medium | Medium |
 
 ## Completed
 
