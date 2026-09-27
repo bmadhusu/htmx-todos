@@ -1,6 +1,6 @@
 # FD-010: CI gates the deploy
 
-**Status:** In Progress
+**Status:** Pending Verification
 **Priority:** High
 **Effort:** Medium (1-4 hours)
 **Impact:** A commit with failing tests can no longer reach the live URL, and a deploy is not called successful until the running commit has been confirmed.
@@ -128,6 +128,38 @@ answering with the new commit before it reports success.
    when the expected SHA never appears
 6. `grep -A 4 '^### Deployment' AGENTS.md` — the description matches the pipeline as built
 7. **Demo walkthrough:** the click path in `## Demo`, shown from the Actions tab
+
+## Results (2026-09-27)
+
+Both directions were exercised against the live service.
+
+| Commit | test | deploy | verify-deploy | Production |
+|--------|------|--------|---------------|------------|
+| `0568d55` (deliberately failing test) | failure | **skipped** | skipped | unchanged at `b724e91f` |
+| `9ca04ac` (revert) | success | success | success | `9ca04ac7` |
+
+### Two findings worth keeping
+
+**1. Deploying from CI costs you Railway's git metadata.** Railway injects
+`RAILWAY_GIT_COMMIT_SHA` only for deploys it triggers from GitHub. `railway up` uploads source with
+no git context, so `/healthz` reported `dev` and `verify-deploy` could never match — the gate worked
+while the verification silently could not. CI now writes the SHA to a `.commit` file beside the
+source, and `resolveVersion()` reads that first, then the environment, then `dev`.
+
+The file is **deliberately not in `.gitignore`**: `railway up` excludes gitignored files from the
+upload, which would drop it without any error. There is a guard for this in the verification steps.
+
+**2. A scratch branch cannot prove this gate.** The `deploy` job carries
+`if: github.ref == 'refs/heads/main'`, so on a branch it is skipped by that condition regardless of
+whether the tests passed — which demonstrates nothing about `needs: test`. The only honest test is a
+failing commit on `main`, made safe by changing no application code, so the worst case is a wasted
+deploy rather than an outage.
+
+### Known limitation
+
+Docs-only commits still run the full pipeline and redeploy. Harmless, but a `paths-ignore` for
+`docs/**` would save a build per documentation change. Not done: skipping deploys by path means the
+running commit stops matching `main`, which is exactly the drift `/healthz` exists to expose.
 
 ## Depends On
 
