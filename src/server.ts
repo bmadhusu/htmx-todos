@@ -1,11 +1,11 @@
-import { buildApp, readVersion } from './app.ts';
+import { buildApp, resolveVersion } from './app.ts';
 
 const port = Number(process.env.PORT ?? 3000);
 if (!Number.isInteger(port) || port <= 0) {
   throw new Error(`PORT must be a positive integer, got ${String(process.env.PORT)}`);
 }
 
-const app = await buildApp({ version: readVersion(process.env.RAILWAY_GIT_COMMIT_SHA) });
+const app = await buildApp({ version: resolveVersion() });
 
 // Railway routes to the container's port, so binding localhost would leave every
 // request unanswered while the deploy itself looks healthy.

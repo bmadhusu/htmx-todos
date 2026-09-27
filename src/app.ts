@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
+
+/** Written by CI next to the uploaded source, immediately before `railway up`. */
+export const COMMIT_FILE = new URL('../.commit', import.meta.url);
 
 /**
  * Validated at the boundary rather than escaped at render: the version is
@@ -8,6 +12,31 @@ import type { FastifyInstance } from 'fastify';
  */
 export function readVersion(raw: string | undefined): string {
   return raw !== undefined && /^[0-9a-f]{7,40}$/i.test(raw) ? raw : 'dev';
+}
+
+/**
+ * Resolve the running commit from, in order: the .commit file CI writes beside
+ * the source, then Railway's own git metadata, then 'dev'.
+ *
+ * The file exists because Railway injects RAILWAY_GIT_COMMIT_SHA only for
+ * deploys it triggers from GitHub. Deploying from CI with `railway up` uploads
+ * source with no git metadata, so the commit has to travel with the upload or
+ * /healthz cannot identify what is running.
+ */
+export function resolveVersion(
+  env: NodeJS.ProcessEnv = process.env,
+  commitFile: URL = COMMIT_FILE,
+): string {
+  let fromFile: string | undefined;
+  try {
+    fromFile = readFileSync(commitFile, 'utf8').trim();
+  } catch {
+    fromFile = undefined;
+  }
+
+  const fromEnv = readVersion(env.RAILWAY_GIT_COMMIT_SHA);
+  const resolved = readVersion(fromFile);
+  return resolved !== 'dev' ? resolved : fromEnv;
 }
 
 export type AppDeps = {
