@@ -28,6 +28,14 @@ macro → rendered page):
   `GET /` rendering the full page, and the error handler that every later FD relies on for its 404
   and 410 paths.
 
+**Folded in from FD-001's proofread:** `src/app.ts` currently builds Fastify with `logger: false`,
+which makes `app.log` a no-op. The error handler this slice introduces calls `app.log.error(error)`
+on its 500 path, so with the logger off **every unexpected production error would be discarded
+silently** — the worst possible failure mode for a deployed demo, because nothing would indicate
+anything went wrong. Enable the logger here, where the first code that depends on it lands:
+`Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'info' } })`, quiet in tests via
+`buildApp`'s deps.
+
 The todos are **read-only in this slice** — nothing is clickable yet. That is deliberate: it puts
 the visual design and the seeded copy in front of a stakeholder before any interaction is built on
 top of them.
@@ -58,7 +66,7 @@ plain text instead of running.
 | `src/store/errors.ts` | CREATE | `NotFound`, `ExpiredUndo` |
 | `src/store/memory.ts` | CREATE | `MemoryStore` — a `Map` with an injected clock |
 | `src/session.ts` | CREATE | Signed `sid` cookie, seeding, tampered-cookie handling |
-| `src/app.ts` | MODIFY | Register cookie, formbody, view, static, session; drop the placeholder `GET /` |
+| `src/app.ts` | MODIFY | Register cookie, formbody, view, static, session; drop the placeholder `GET /`; enable the Fastify logger so the error handler's `app.log.error` is not a no-op |
 | `src/lib/params.ts` | CREATE | `parseListParams`, `backUrl` (never reads `Referer`) |
 | `src/lib/render.ts` | CREATE | `fragments(app)` — one call site per fragment |
 | `src/lib/error-handler.ts` | CREATE | `NotFound` → 404, `ExpiredUndo` → 410, branching on `HX-Request` |
@@ -82,7 +90,10 @@ plain text instead of running.
 3. Open a private window: a separate list with its own three seeded todos
 4. Confirm the escaping test asserts `<img src=x onerror=alert(1)>` renders as entities
 5. Confirm `/static/htmx.min.js` and `/static/app.css` both return 200
-6. **Demo walkthrough:** deploy, open the live URL, open it again in a private window, and show the
+6. Confirm the error handler's 500 path actually logs: force a handler to throw and check the
+   output is not swallowed. A passing test suite proves nothing here — `logger: false` made
+   `app.log.error` succeed silently
+7. **Demo walkthrough:** deploy, open the live URL, open it again in a private window, and show the
    two lists are independent
 
 ## Plan Coverage
@@ -101,3 +112,4 @@ Source: `docs/superpowers/plans/2026-09-26-htmx-todo-app.md`
 
 - Spec: Architecture, Data model, The store interface, The row macro
 - Plan: Tasks 2, 3, 5, 6
+- Carries a finding from FD-001's proofread: `logger: false` makes `app.log` a no-op
