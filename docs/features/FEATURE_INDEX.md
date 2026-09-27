@@ -8,7 +8,6 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 
 | FD | Title | Status | Effort | Priority |
 |----|-------|--------|--------|----------|
-| FD-001 | Walking skeleton live on Railway | Pending Verification | Medium | High |
 | FD-002 | Every visitor gets their own seeded list | Open | High | High |
 | FD-003 | Search and filter as you type | Open | Medium | Medium |
 | FD-004 | Add a todo, with and without JavaScript | Open | Medium | High |
@@ -22,7 +21,7 @@ See `AGENTS.md` for FD lifecycle stages and management guidelines.
 
 | FD | Title | Completed | Notes |
 |----|-------|-----------|-------|
-| - | - | - | No completed features yet |
+| FD-001 | Walking skeleton live on Railway | 2026-09-26 | Live at htmx-todos-production.up.railway.app; CI green; rollback rehearsed both directions |
 
 ## Deferred / Closed
 

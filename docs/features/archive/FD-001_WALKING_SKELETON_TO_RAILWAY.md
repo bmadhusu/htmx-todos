@@ -1,6 +1,7 @@
 # FD-001: Walking skeleton live on Railway
 
-**Status:** Pending Verification
+**Status:** Complete
+**Completed:** 2026-09-26
 **Priority:** High
 **Effort:** Medium (1-4 hours)
 **Impact:** Proves the whole delivery path — repo → CI → build → deploy → live URL → rollback — while the app is still nearly empty and hiccups cost nothing to fix.
