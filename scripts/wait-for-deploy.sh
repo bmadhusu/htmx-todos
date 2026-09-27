@@ -31,7 +31,11 @@ for attempt in $(seq 1 "${ATTEMPTS}"); do
     short="${version:0:8}"
     echo "  attempt ${attempt}/${ATTEMPTS}: live is ${short:-unparseable}"
   fi
-  sleep "${INTERVAL}"
+
+  # No point sleeping after the last look.
+  if [ "${attempt}" -lt "${ATTEMPTS}" ]; then
+    sleep "${INTERVAL}"
+  fi
 done
 
 echo "❌ ${BASE_URL} never reported ${EXPECTED:0:8} after $((ATTEMPTS * INTERVAL))s" >&2

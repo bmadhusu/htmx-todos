@@ -27,16 +27,15 @@ export function resolveVersion(
   env: NodeJS.ProcessEnv = process.env,
   commitFile: URL = COMMIT_FILE,
 ): string {
-  let fromFile: string | undefined;
+  let contents: string | undefined;
   try {
-    fromFile = readFileSync(commitFile, 'utf8').trim();
+    contents = readFileSync(commitFile, 'utf8').trim();
   } catch {
-    fromFile = undefined;
+    contents = undefined;
   }
 
-  const fromEnv = readVersion(env.RAILWAY_GIT_COMMIT_SHA);
-  const resolved = readVersion(fromFile);
-  return resolved !== 'dev' ? resolved : fromEnv;
+  const fromFile = readVersion(contents);
+  return fromFile !== 'dev' ? fromFile : readVersion(env.RAILWAY_GIT_COMMIT_SHA);
 }
 
 export type AppDeps = {
